@@ -4,32 +4,100 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Kahoo — Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; background:#f0f0f0; margin:0; display:flex; justify-content:center; }
-    .wrap { width:100%; max-width:720px; padding:24px; }
-    .card { background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.08); padding:16px 20px; margin:12px 0; }
-    h1,h2 { margin:8px 0 16px; }
-    input { width:100%; padding:10px 12px; margin:6px 0; border-radius:8px; border:1px solid #ddd; }
-    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
-    .btn { background:#5b6df7; color:#fff; }
-    .btn.secondary { background:#eee; color:#333; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; }
-    .option { width:100%; margin:6px 0; padding:12px; background:#ececec; border-radius:8px; cursor:pointer; text-align:left; }
-    .timer { color:#d62828; font-weight:bold; }
-    .muted { color:#666; }
-    .players .item { padding:6px 0; border-bottom:1px dashed #eee; }
-    .pill { background:#f6f6ff; padding:6px 10px; border-radius:999px; display:inline-block; }
-    .hide { display:none; }
+    :root{
+      --bg1:#6a11cb; --bg2:#2575fc;
+      --card: rgba(255,255,255,.12);
+      --glass: blur(10px);
+      --accent:#ffbf3c;
+      --opt1:#f44336; --opt2:#2196f3; --opt3:#4caf50; --opt4:#ff9800;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; color:#fff; font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(255,255,255,.08), transparent) ,
+                  linear-gradient(135deg,var(--bg1),var(--bg2));
+    }
+    .wrap{ width:100%; max-width:860px; padding:20px;}
+    .card{
+      background:var(--card); border-radius:18px; padding:18px 20px; margin:12px 0;
+      box-shadow:0 20px 60px rgba(0,0,0,.25); backdrop-filter:var(--glass); animation:pop .3s ease;
+    }
+    @keyframes pop{from{transform:translateY(10px); opacity:0} to{transform:none; opacity:1}}
+    h1,h2,h3{margin:8px 0 12px}
+    h1{font-weight:800; letter-spacing:.3px}
+    input{
+      width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.25);
+      background:rgba(0,0,0,.2); color:#fff; outline:none;
+    }
+    input::placeholder{color:#dfe7ffbf}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      padding:12px 16px; border:0; border-radius:12px; cursor:pointer; font-weight:600;
+      transition:transform .15s ease, filter .2s ease, background .2s ease;
+    }
+    .btn{ background:linear-gradient(135deg,#ff7b00,#ffbf3c); color:#222}
+    .btn.secondary{ background:rgba(255,255,255,.2); color:#fff; border:1px solid rgba(255,255,255,.25)}
+    button:hover{ transform:translateY(-1px); filter:brightness(1.05)}
+    button:disabled{ opacity:.6; cursor:not-allowed; transform:none}
+
+    /* LOBBY */
+    .pill{ background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28);
+      padding:6px 12px; border-radius:999px; display:inline-block}
+    .players-list{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+    .player-card{
+      background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25);
+      padding:8px 12px; border-radius:10px; font-size:.95rem
+    }
+
+    /* GAME */
+    .header{ display:flex; justify-content:space-between; align-items:center}
+    .qtitle{ font-size:1.4rem; line-height:1.35}
+    .options{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px}
+    @media(min-width:640px){ .options{ grid-template-columns:1fr 1fr } }
+    .option{
+      border:0; color:#fff; font-weight:700; text-align:left; padding:16px;
+      border-radius:14px; position:relative; overflow:hidden; isolation:isolate;
+      box-shadow:0 10px 30px rgba(0,0,0,.2)
+    }
+    .option span{position:relative; z-index:2}
+    .option::after{
+      content:""; position:absolute; inset:0; background:rgba(255,255,255,.12); opacity:0; transition:.2s; z-index:1
+    }
+    .option:hover::after{opacity:.25}
+    .option.selected{ outline:3px solid #fff; transform:scale(1.02)}
+    .opt1{ background:var(--opt1)} .opt2{ background:var(--opt2)}
+    .opt3{ background:var(--opt3)} .opt4{ background:var(--opt4)}
+
+    /* TIMER circle */
+    .timerWrap{ display:flex; align-items:center; gap:10px}
+    .timer-circle{
+      width:80px; height:80px; border-radius:50%;
+      background: conic-gradient(#ffe082 calc(var(--pct)*1%), rgba(255,255,255,.18) 0);
+      display:flex; align-items:center; justify-content:center; font-weight:800; color:#222;
+      box-shadow: inset 0 0 0 8px rgba(0,0,0,.2), 0 8px 18px rgba(0,0,0,.2);
+    }
+    .timer-inner{ width:58px; height:58px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center}
+
+    /* SUMMARY + RESULT */
+    .leader{ display:flex; flex-direction:column; gap:6px}
+    .leader div:first-child{ font-size:1.2rem; font-weight:800; color:#ffe082; text-shadow:0 0 10px rgba(255,208,0,.7); }
+    .muted{ opacity:.8}
+    .hide{ display:none}
   </style>
 </head>
 <body>
   <div class="wrap">
 
-    <!-- Lobby -->
+    <!-- LOBBY -->
     <div id="lobby" class="card">
-      <h1>เริ่มเกม</h1>
+      <h1>🎮 Kahoo — เริ่มเกม</h1>
       <div class="row">
-        <input id="nameInput" placeholder="ชื่อผู้เล่น" />
+        <input id="nameInput" placeholder="ชื่อผู้เล่น (เช่น Beam, New, Aom)" />
       </div>
       <div class="row">
         <button id="createBtn" class="btn">สร้างห้อง</button>
@@ -38,33 +106,41 @@
       </div>
 
       <div id="shareBox" class="card hide">
-        <h2>ห้องของคุณ: <span id="roomIdText" class="pill"></span></h2>
-        <div class="muted" id="shareLink"></div>
-        <div class="muted">ส่งลิงก์หรือบอกรหัสให้เพื่อนเพื่อเข้าห้องได้เลย</div>
-        <button id="startBtn" class="btn" disabled>เริ่มเกม</button>
+        <h3>ห้องของคุณ: <span id="roomIdText" class="pill"></span></h3>
+        <div class="muted">ลิงก์เชิญ: <span id="shareLink" class="pill"></span></div>
+        <h4 style="margin-top:12px;">ผู้เล่นที่กำลังรอ</h4>
+        <div id="lobbyPlayers" class="players-list"></div>
+        <button id="startBtn" class="btn" disabled>🚀 เริ่มเกม</button>
       </div>
     </div>
 
-    <!-- Game -->
+    <!-- GAME -->
     <div id="game" class="card hide">
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <div>ข้อ <span id="qNo">-</span>/<span id="qTotal">-</span></div>
-        <div class="timer" id="timer">Time: -</div>
+      <div class="header">
+        <div>ข้อ <b id="qNo">-</b>/<span id="qTotal">-</span></div>
+        <div class="timerWrap">
+          <div class="timer-circle" id="timer" style="--pct:100">
+            <div class="timer-inner" id="timerInner">10</div>
+          </div>
+        </div>
       </div>
-      <h2 id="question">—</h2>
-      <div id="options"></div>
-      <div class="card players">
-        <h3>ผู้เล่น</h3>
-        <div id="players"></div>
-      </div>
-      <div id="hint" class="muted"></div>
+      <h2 id="question" class="qtitle">—</h2>
+      <div id="options" class="options"></div>
     </div>
 
-    <!-- Result -->
+    <!-- PER QUESTION SUMMARY -->
+    <div id="summary" class="card hide">
+      <h2>สรุปข้อ <span id="sumNo">-</span>/<span id="sumTotal">-</span></h2>
+      <div id="answerInfo" class="muted" style="margin-bottom:10px;"></div>
+      <h3>🏆 คะแนนรวม</h3>
+      <div id="scoreboard" class="leader"></div>
+    </div>
+
+    <!-- GAME OVER -->
     <div id="result" class="card hide">
-      <h2>สรุปคะแนน</h2>
-      <div id="rankings"></div>
-      <button onclick="location.href='/'" class="btn secondary">กลับหน้าแรก</button>
+      <h2>🎉 จบเกม</h2>
+      <div id="finalBoard" class="leader" style="margin-bottom:10px;"></div>
+      <button onclick="location.href='/'" class="btn secondary">เล่นใหม่</button>
     </div>
 
   </div>
@@ -72,103 +148,113 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-
-    const qs = (id) => document.getElementById(id);
-    const lobby = qs('lobby'), game = qs('game'), result = qs('result');
+    const qs = id => document.getElementById(id);
 
     let roomId = '';
     let myName = '';
     let isHost = false;
+    let locked = false;
+    const colors = ['opt1','opt2','opt3','opt4'];
 
-    // Prefill room from ?room=XXXX
+    // Prefill room from URL
     const urlRoom = new URLSearchParams(location.search).get('room');
     if (urlRoom) qs('roomInput').value = urlRoom;
 
-    // Create room
+    // ---- Lobby ----
     qs('createBtn').onclick = () => {
-      myName = qs('nameInput').value.trim() || 'Host';
+      myName = (qs('nameInput').value || '').trim() || 'Host';
       socket.emit('createRoom', { playerName: myName });
     };
-
     socket.on('roomCreated', ({ roomId: rid }) => {
-      isHost = true;
-      roomId = rid;
-      const share = `${location.origin}?room=${roomId}`;
+      isHost = true; roomId = rid;
+      const link = `${location.origin}?room=${roomId}`;
       qs('shareBox').classList.remove('hide');
       qs('roomIdText').textContent = roomId;
-      qs('shareLink').textContent = share;
-      qs('startBtn').disabled = false;
+      qs('shareLink').textContent = link;
+      qs('startBtn').disabled = true;
     });
 
-    // Join room
     qs('joinBtn').onclick = () => {
-      myName = qs('nameInput').value.trim() || 'Player';
-      const rid = qs('roomInput').value.trim().toUpperCase();
+      myName = (qs('nameInput').value || '').trim() || 'Player';
+      const rid = (qs('roomInput').value || '').trim().toUpperCase();
       if (!rid) return alert('กรอกรหัสห้องก่อน');
       roomId = rid;
       socket.emit('join', { roomId, playerName: myName });
-      // เปิดกล่องแสดงรหัส (สำหรับเห็นผู้เล่น/รอเริ่ม)
       qs('shareBox').classList.remove('hide');
       qs('roomIdText').textContent = roomId;
       qs('shareLink').textContent = `${location.origin}?room=${roomId}`;
-      qs('startBtn').classList.add('hide'); // ผู้เล่นทั่วไปไม่มีปุ่มเริ่ม
+      qs('startBtn').classList.add('hide'); // ผู้เล่นทั่วไปไม่เห็นปุ่มเริ่ม
     };
 
-    // start button (host only)
-    qs('startBtn').onclick = () => {
-      if (!isHost) return;
-      socket.emit('startGame', roomId);
-    };
-
-    // players list
-    socket.on('players', (players) => {
-      qs('players').innerHTML = players.map(p => `<div class="item">${p.name}: ${p.score} points</div>`).join('');
-      // เปิดปุ่มเริ่มเมื่อมีอย่างน้อย 1 ผู้เล่น
-      if (isHost) qs('startBtn').disabled = players.length === 0;
+    socket.on('lobbyPlayers', (names) => {
+      qs('lobbyPlayers').innerHTML = names.map(n => `<div class="player-card">👤 ${n}</div>`).join('');
+      if (isHost) qs('startBtn').disabled = names.length === 0;
     });
 
-    // system messages
-    socket.on('system', (msg) => {
-      qs('hint').textContent = msg;
-    });
+    qs('startBtn').onclick = () => { if (isHost) socket.emit('startGame', roomId); };
 
-    // game started
+    // ---- In Game ----
     socket.on('gameStarted', () => {
-      lobby.classList.add('hide');
-      game.classList.remove('hide');
+      qs('lobby').classList.add('hide');
+      qs('summary').classList.add('hide');
+      qs('game').classList.remove('hide');
     });
 
-    // question
     socket.on('question', (q) => {
+      locked = false;
+      qs('game').classList.remove('hide');
+      qs('summary').classList.add('hide');
+
       qs('qNo').textContent = q.index;
       qs('qTotal').textContent = q.total;
       qs('question').textContent = q.question;
+
       const opt = qs('options');
       opt.innerHTML = '';
       q.options.forEach((text, idx) => {
         const b = document.createElement('button');
-        b.className = 'option';
-        b.textContent = text;
-        b.onclick = () => socket.emit('answer', { roomId, answerIndex: idx });
+        b.className = `option ${colors[idx % colors.length]}`;
+        b.innerHTML = `<span>${text}</span>`;
+        b.onclick = () => {
+          if (locked) return;
+          locked = true;
+          [...opt.children].forEach(el => el.disabled = true);
+          b.classList.add('selected');
+          socket.emit('answer', { roomId, answerIndex: idx });
+        };
         opt.appendChild(b);
       });
     });
 
+    // timer circle
     socket.on('timer', (t) => {
-      qs('timer').textContent = `Time: ${t}s`;
+      const pct = Math.max(0, (t / 10) * 100);
+      qs('timer').style.setProperty('--pct', pct);
+      qs('timerInner').textContent = `${t}`;
     });
 
-    socket.on('endQuestion', ({ correctAnswer }) => {
-      // แสดงเฉลยสั้นๆ
-      qs('hint').textContent = `เฉลยข้อที่ผ่านมา: ตัวเลือกที่ ${correctAnswer + 1}`;
+    // per-question summary
+    socket.on('questionSummary', (data) => {
+      qs('game').classList.add('hide');
+      qs('summary').classList.remove('hide');
+      qs('sumNo').textContent = data.index;
+      qs('sumTotal').textContent = data.total;
+      qs('answerInfo').textContent = `เฉลย: ตัวเลือกที่ ${data.correctAnswer + 1}`;
     });
 
-    socket.on('result', (players) => {
-      game.classList.add('hide');
-      result.classList.remove('hide');
-      qs('rankings').innerHTML = players
-        .map((p, i) => `<div class="item">อันดับ ${i+1}: ${p.name} — ${p.score} คะแนน</div>`)
-        .join('');
+    // scoreboard (both summary + final)
+    socket.on('scoreboard', (rows) => {
+      const html = rows.map((p, i) =>
+        `<div>${i===0?'👑 ':''}${i+1}. ${p.name} — <b>${p.score}</b> คะแนน</div>`
+      ).join('');
+      qs('scoreboard').innerHTML = html;
+      qs('finalBoard').innerHTML = html;
+    });
+
+    socket.on('gameOver', () => {
+      qs('summary').classList.add('hide');
+      qs('game').classList.add('hide');
+      qs('result').classList.remove('hide');
     });
 
     socket.on('errorMessage', (msg) => alert(msg));
