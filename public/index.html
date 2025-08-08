@@ -5,55 +5,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game - Kahoot! Style</title>
   <style>
-    body { font-family: Arial, sans-serif; }
-    #question { font-size: 1.5em; }
-    .option { margin: 10px; cursor: pointer; }
-    .active { background-color: lightblue; }
-    #players { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+
+    .option {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      background: #ddd;
+      border: none;
+      width: 100%;
+      cursor: pointer;
+      font-size: 1.2em;
+      border-radius: 5px;
+    }
+
+    .option:hover {
+      background: #ccc;
+    }
+
+    .timer {
+      font-size: 1.5em;
+      color: red;
+    }
+
+    #players {
+      margin-top: 20px;
+      padding: 10px;
+      background: #fafafa;
+      border-radius: 5px;
+    }
+
+    .player {
+      font-size: 1.1em;
+    }
+
+    #result {
+      margin-top: 30px;
+      font-size: 1.5em;
+      font-weight: bold;
+      text-align: center;
+    }
+
   </style>
 </head>
 <body>
-  <h1>Welcome to the Game!</h1>
-  
-  <div id="playerNameForm">
-    <input type="text" id="playerName" placeholder="Enter your name">
-    <input type="text" id="roomId" placeholder="Enter Room ID">
+
+  <div id="joinScreen" class="game-container">
+    <h1>Join Game</h1>
+    <input type="text" id="playerName" placeholder="Enter your name" />
+    <input type="text" id="roomId" placeholder="Enter Room ID" />
     <button id="joinButton">Join Game</button>
   </div>
 
-  <div id="gameArea" style="display:none;">
-    <div id="question"></div>
+  <div id="gameScreen" class="game-container" style="display:none;">
+    <div id="question" class="question"></div>
     <div id="options"></div>
+    <div id="timer" class="timer"></div>
     <div id="players"></div>
+  </div>
+
+  <div id="resultScreen" class="game-container" style="display:none;">
+    <h2>Game Over!</h2>
+    <div id="result"></div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    let roomId = '';
+    let playerName = '';
+    let countdownTimer;
 
-    // ฟังก์ชั่นเมื่อผู้เล่นเข้าร่วมเกม
     document.getElementById('joinButton').addEventListener('click', () => {
-      const name = document.getElementById('playerName').value;
-      const roomId = document.getElementById('roomId').value;
-      if (name && roomId) {
-        socket.emit('join', { roomId, playerName: name });
-        document.getElementById('playerNameForm').style.display = 'none';
-        document.getElementById('gameArea').style.display = 'block';
+      playerName = document.getElementById('playerName').value;
+      roomId = document.getElementById('roomId').value;
+      if (playerName && roomId) {
+        socket.emit('join', { roomId, playerName });
+        document.getElementById('joinScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'block';
       }
     });
 
-    // รับข้อมูลผู้เล่นทั้งหมด
     socket.on('players', (players) => {
       const playersList = document.getElementById('players');
-      playersList.innerHTML = '';
-      players.forEach(player => {
-        const li = document.createElement('li');
-        li.textContent = `${player.name}: ${player.score} points`;
-        playersList.appendChild(li);
-      });
+      playersList.innerHTML = players.map(player => 
+        `<div class="player">${player.name}: ${player.score} points</div>`
+      ).join('');
     });
 
-    // รับคำถามจาก server
     socket.on('question', (question) => {
       document.getElementById('question').textContent = question.question;
       const optionsDiv = document.getElementById('options');
@@ -63,16 +130,30 @@
         button.classList.add('option');
         button.textContent = option;
         button.onclick = () => {
-          socket.emit('answer', { roomId: 'room1', answerIndex: index });
+          socket.emit('answer', { roomId, answerIndex: index });
         };
         optionsDiv.appendChild(button);
       });
     });
 
-    // เริ่มเกม
-    setTimeout(() => {
-      socket.emit('startGame', 'room1');
-    }, 3000);
+    socket.on('timer', (time) => {
+      document.getElementById('timer').textContent = `Time left: ${time}s`;
+    });
+
+    socket.on('endQuestion', (question) => {
+      socket.emit('startGame', roomId); // ต่อไปคำถามถัดไป
+    });
+
+    socket.on('result', (players) => {
+      const result = document.getElementById('result');
+      result.innerHTML = players.sort((a, b) => b.score - a.score).map((player, idx) =>
+        `<p>Rank ${idx + 1}: ${player.name} - ${player.score} points</p>`
+      ).join('');
+      document.getElementById('gameScreen').style.display = 'none';
+      document.getElementById('resultScreen').style.display = 'block';
+    });
+
   </script>
+
 </body>
 </html>

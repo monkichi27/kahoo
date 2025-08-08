@@ -9,33 +9,46 @@ const io = socketIo(server);
 
 app.use(express.static('public'));
 
-// กำหนดคำถามและคำตอบ
+// คำถามและตัวเลือก
 const questions = [
   {
     question: "What is the capital of France?",
     options: ["Paris", "London", "Berlin", "Madrid"],
-    correctAnswer: 0 // เลือกข้อที่ถูกต้อง (Index)
+    correctAnswer: 0 // Paris
   },
   {
     question: "What is 2 + 2?",
     options: ["3", "4", "5", "6"],
-    correctAnswer: 1
+    correctAnswer: 1 // 4
   },
+  {
+    question: "What color is the sky?",
+    options: ["Blue", "Green", "Red", "Yellow"],
+    correctAnswer: 0 // Blue
+  },
+  {
+    question: "Which is the largest planet?",
+    options: ["Earth", "Mars", "Jupiter", "Venus"],
+    correctAnswer: 2 // Jupiter
+  },
+  {
+    question: "Who wrote 'Romeo and Juliet'?",
+    options: ["Shakespeare", "Dickens", "Hemingway", "Tolkien"],
+    correctAnswer: 0 // Shakespeare
+  }
 ];
 
 let rooms = {}; // เก็บข้อมูลห้อง
-let currentQuestion = 0;
+let currentQuestionIndex = 0;
+let timer = null;
 
-// หน้าแรกให้ผู้เล่นกรอกชื่อ
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
+app.use(express.static('public')); // ส่งไฟล์ HTML
 
 // ตั้งค่า socket
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  // ให้ผู้เล่นกรอกชื่อ
+  // สร้างห้องหรือเข้าร่วมห้อง
   socket.on('join', (data) => {
     const { roomId, playerName } = data;
     if (!rooms[roomId]) {
@@ -43,19 +56,18 @@ io.on('connection', (socket) => {
     }
 
     rooms[roomId].players.push({ socketId: socket.id, name: playerName, score: 0 });
-
-    socket.join(roomId);  // ผู้เล่นเข้าร่วมห้อง
-
-    console.log(`User ${playerName} joined room ${roomId}`);
-
+    socket.join(roomId); // เข้าร่วมห้อง
     io.to(roomId).emit('players', rooms[roomId].players); // ส่งข้อมูลผู้เล่นในห้อง
+
+    console.log(`${playerName} joined room ${roomId}`);
   });
 
   // ส่งคำถามไปยังห้อง
   socket.on('startGame', (roomId) => {
-    if (rooms[roomId] && currentQuestion < questions.length) {
-      io.to(roomId).emit('question', questions[currentQuestion]);
-      currentQuestion++;
+    if (rooms[roomId] && currentQuestionIndex < questions.length) {
+      io.to(roomId).emit('question', questions[currentQuestionIndex]);
+      startTimer(roomId);
+      currentQuestionIndex++;
     }
   });
 
@@ -63,11 +75,26 @@ io.on('connection', (socket) => {
   socket.on('answer', (data) => {
     const { roomId, answerIndex } = data;
     const player = rooms[roomId].players.find(p => p.socketId === socket.id);
-    if (questions[currentQuestion - 1].correctAnswer === answerIndex) {
+    if (questions[currentQuestionIndex - 1].correctAnswer === answerIndex) {
       player.score += 10; // เพิ่มคะแนน
     }
     io.to(roomId).emit('players', rooms[roomId].players);  // ส่งข้อมูลคะแนนใหม่
   });
+
+  // ฟังก์ชั่นนับถอยหลัง
+  function startTimer(roomId) {
+    let countdown = 10; // ตั้งเวลา 10 วินาที
+    io.to(roomId).emit('timer', countdown);
+
+    timer = setInterval(() => {
+      countdown--;
+      io.to(roomId).emit('timer', countdown);
+      if (countdown <= 0) {
+        clearInterval(timer);
+        io.to(roomId).emit('endQuestion', questions[currentQuestionIndex - 1]);
+      }
+    }, 1000);
+  }
 
   // เมื่อผู้เล่นออกจากเกม
   socket.on('disconnect', () => {
