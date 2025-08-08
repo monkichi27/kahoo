@@ -17,6 +17,7 @@
   
   <div id="playerNameForm">
     <input type="text" id="playerName" placeholder="Enter your name">
+    <input type="text" id="roomId" placeholder="Enter Room ID">
     <button id="joinButton">Join Game</button>
   </div>
 
@@ -33,8 +34,9 @@
     // ฟังก์ชั่นเมื่อผู้เล่นเข้าร่วมเกม
     document.getElementById('joinButton').addEventListener('click', () => {
       const name = document.getElementById('playerName').value;
-      if (name) {
-        socket.emit('join', name);
+      const roomId = document.getElementById('roomId').value;
+      if (name && roomId) {
+        socket.emit('join', { roomId, playerName: name });
         document.getElementById('playerNameForm').style.display = 'none';
         document.getElementById('gameArea').style.display = 'block';
       }
@@ -61,7 +63,7 @@
         button.classList.add('option');
         button.textContent = option;
         button.onclick = () => {
-          socket.emit('answer', { answerIndex: index });
+          socket.emit('answer', { roomId: 'room1', answerIndex: index });
         };
         optionsDiv.appendChild(button);
       });
@@ -69,7 +71,7 @@
 
     // เริ่มเกม
     setTimeout(() => {
-      socket.emit('startGame');
+      socket.emit('startGame', 'room1');
     }, 3000);
   </script>
 </body>
