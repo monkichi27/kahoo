@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game - Kahoot! Style</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #question { font-size: 1.5em; }
+    .option { margin: 10px; cursor: pointer; }
+    .active { background-color: lightblue; }
+    #players { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Welcome to the Game!</h1>
+  
+  <div id="playerNameForm">
+    <input type="text" id="playerName" placeholder="Enter your name">
+    <button id="joinButton">Join Game</button>
+  </div>
+
+  <div id="gameArea" style="display:none;">
+    <div id="question"></div>
+    <div id="options"></div>
+    <div id="players"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // ฟังก์ชั่นเมื่อผู้เล่นเข้าร่วมเกม
+    document.getElementById('joinButton').addEventListener('click', () => {
+      const name = document.getElementById('playerName').value;
+      if (name) {
+        socket.emit('join', name);
+        document.getElementById('playerNameForm').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+      }
+    });
+
+    // รับข้อมูลผู้เล่นทั้งหมด
+    socket.on('players', (players) => {
+      const playersList = document.getElementById('players');
+      playersList.innerHTML = '';
+      players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = `${player.name}: ${player.score} points`;
+        playersList.appendChild(li);
+      });
+    });
+
+    // รับคำถามจาก server
+    socket.on('question', (question) => {
+      document.getElementById('question').textContent = question.question;
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = '';
+      question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.classList.add('option');
+        button.textContent = option;
+        button.onclick = () => {
+          socket.emit('answer', { answerIndex: index });
+        };
+        optionsDiv.appendChild(button);
+      });
+    });
+
+    // เริ่มเกม
+    setTimeout(() => {
+      socket.emit('startGame');
+    }, 3000);
+  </script>
+</body>
+</html>
