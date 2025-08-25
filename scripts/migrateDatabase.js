@@ -4,6 +4,15 @@ const bcrypt = require('bcryptjs');
 async function runMigrations() {
   console.log('🚀 Starting database migrations...');
   
+  // Check if DATABASE_URL is set
+  if (!process.env.DATABASE_URL) {
+    console.log('⚠️  DATABASE_URL not found, falling back to SQLite');
+    const { initDatabase } = require('./initDatabase');
+    return await initDatabase();
+  }
+
+  console.log('📦 Using PostgreSQL from DATABASE_URL');
+  
   try {
     // Create tables with PostgreSQL-compatible syntax
     const tables = [

@@ -37,7 +37,7 @@ git push origin master
    - **Build Command**: `npm install && npm run build:prod`
    - **Start Command**: `npm start`
 
-### 4. Environment Variables
+### 4. Environment Variables ⚠️ **สำคัญมาก!**
 เพิ่มตัวแปรเหล่านี้ใน **Environment** tab:
 
 ```env
@@ -48,10 +48,16 @@ PORT=10000
 ALLOWED_ORIGINS=https://<your-app-name>.onrender.com
 ```
 
-**สำคัญ**: 
-- **JWT_SECRET**: ใช้ Render's auto-generate หรือสร้างเอง
-- **DATABASE_URL**: Copy จาก PostgreSQL ที่สร้างไว้
+**🚨 สำคัญที่สุด**: 
+- **DATABASE_URL**: **ต้องเพิ่มก่อน Deploy!** Copy จาก PostgreSQL External Database URL
+- **JWT_SECRET**: ใช้ Render's "Generate" หรือสร้างเอง
 - **ALLOWED_ORIGINS**: แทนที่ `<your-app-name>` ด้วยชื่อ app จริง
+
+**📋 วิธี Copy DATABASE_URL:**
+1. เข้า PostgreSQL Dashboard
+2. ไปที่ **Connections** 
+3. Copy **External Database URL**
+4. Paste ใน Environment Variables
 
 ### 5. Advanced Settings (Optional)
 - **Health Check Path**: `/health`

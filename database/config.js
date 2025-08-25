@@ -15,11 +15,12 @@ const config = {
   },
   
   production: {
-    type: 'postgresql',
+    type: process.env.DATABASE_URL ? 'postgresql' : 'sqlite',
     url: process.env.DATABASE_URL,
-    ssl: {
+    database: process.env.DATABASE_URL ? undefined : path.join(__dirname, '..', 'database.sqlite'),
+    ssl: process.env.DATABASE_URL ? {
       rejectUnauthorized: false
-    },
+    } : undefined,
     logging: false
   }
 };
