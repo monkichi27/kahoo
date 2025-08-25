@@ -4,16 +4,26 @@ const bcrypt = require('bcryptjs');
 async function runMigrations() {
   console.log('🚀 Starting database migrations...');
   
-  // Check if DATABASE_URL is set
-  if (!process.env.DATABASE_URL) {
-    console.log('⚠️  DATABASE_URL not found, falling back to SQLite');
+  // Check if DATABASE_URL is set and valid
+  if (!process.env.DATABASE_URL || 
+      process.env.DATABASE_URL === 'base' || 
+      !process.env.DATABASE_URL.startsWith('postgresql://')) {
+    
+    console.log('⚠️  DATABASE_URL not found or invalid, falling back to SQLite');
+    console.log('💡 Set proper PostgreSQL DATABASE_URL in environment variables for production');
     const { initDatabase } = require('./initDatabase');
     return await initDatabase();
   }
 
   console.log('📦 Using PostgreSQL from DATABASE_URL');
+  console.log(`🔗 Host: ${new URL(process.env.DATABASE_URL).hostname}`);
   
   try {
+    // Test PostgreSQL connection first
+    console.log('🔍 Testing PostgreSQL connection...');
+    await dbFactory.query('SELECT 1');
+    console.log('✅ PostgreSQL connection successful');
+    
     // Create tables with PostgreSQL-compatible syntax
     const tables = [
       {
@@ -183,8 +193,17 @@ async function runMigrations() {
     console.log(`❓ Questions: ${questions.length}`);
 
   } catch (error) {
-    console.error('❌ Migration failed:', error);
-    throw error;
+    console.error('❌ PostgreSQL migration failed:', error.message);
+    console.log('🔄 Falling back to SQLite...');
+    
+    try {
+      const { initDatabase } = require('./initDatabase');
+      await initDatabase();
+      console.log('✅ Fallback to SQLite successful');
+    } catch (fallbackError) {
+      console.error('💥 SQLite fallback also failed:', fallbackError);
+      throw fallbackError;
+    }
   }
 }
 

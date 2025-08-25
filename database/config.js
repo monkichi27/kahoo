@@ -15,10 +15,18 @@ const config = {
   },
   
   production: {
-    type: process.env.DATABASE_URL ? 'postgresql' : 'sqlite',
-    url: process.env.DATABASE_URL,
-    database: process.env.DATABASE_URL ? undefined : path.join(__dirname, '..', 'database.sqlite'),
-    ssl: process.env.DATABASE_URL ? {
+    type: (process.env.DATABASE_URL && 
+           process.env.DATABASE_URL !== 'base' && 
+           process.env.DATABASE_URL.startsWith('postgresql://')) ? 'postgresql' : 'sqlite',
+    url: (process.env.DATABASE_URL && 
+          process.env.DATABASE_URL !== 'base' && 
+          process.env.DATABASE_URL.startsWith('postgresql://')) ? process.env.DATABASE_URL : undefined,
+    database: (process.env.DATABASE_URL && 
+               process.env.DATABASE_URL !== 'base' && 
+               process.env.DATABASE_URL.startsWith('postgresql://')) ? undefined : path.join(__dirname, '..', 'database.sqlite'),
+    ssl: (process.env.DATABASE_URL && 
+          process.env.DATABASE_URL !== 'base' && 
+          process.env.DATABASE_URL.startsWith('postgresql://')) ? {
       rejectUnauthorized: false
     } : undefined,
     logging: false
