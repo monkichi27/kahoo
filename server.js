@@ -462,6 +462,16 @@ class GameManager {
 
 const gameManager = new GameManager();
 
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // API Routes
 app.post('/api/auth/register', registerValidation, handleValidationErrors, async (req, res) => {
   try {

@@ -1,12 +1,26 @@
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcryptjs');
-const path = require('path');
+const config = require('../database/config');
 
-const dbPath = path.join(__dirname, '..', 'database.sqlite');
-const db = new sqlite3.Database(dbPath);
+async function initDatabase() {
+  console.log(`🚀 Initializing database for ${config.type} environment...`);
+  
+  if (config.type === 'postgresql') {
+    // Use PostgreSQL migration for production
+    const { runMigrations } = require('./migrateDatabase');
+    await runMigrations();
+    return;
+  }
+  
+  // SQLite initialization for development
+  const sqlite3 = require('sqlite3').verbose();
+  const bcrypt = require('bcryptjs');
+  const path = require('path');
 
-// Create tables
-db.serialize(() => {
+  const dbPath = path.join(__dirname, '..', 'database.sqlite');
+  const db = new sqlite3.Database(dbPath);
+
+  return new Promise((resolve, reject) => {
+    // Create tables
+    db.serialize(() => {
   // Users table
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,16 +172,32 @@ db.serialize(() => {
     });
     questionStmt.finalize();
 
-    console.log('Database initialized successfully!');
-    console.log(`Categories created: ${categories.length}`);
-    console.log(`Sample questions added: ${questions.length}`);
-    
-    db.close((err) => {
-      if (err) {
-        console.error('Error closing database:', err);
-      } else {
-        console.log('Database connection closed.');
-      }
+      console.log('Database initialized successfully!');
+      console.log(`Categories created: ${categories.length}`);
+      console.log(`Sample questions added: ${questions.length}`);
+      
+      db.close((err) => {
+        if (err) {
+          console.error('Error closing database:', err);
+          reject(err);
+        } else {
+          console.log('Database connection closed.');
+          resolve();
+        }
+      });
     });
   });
-});
+}
+
+// Run if called directly
+if (require.main === module) {
+  initDatabase()
+    .then(() => {
+      console.log('🎉 Database initialization completed!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('💥 Database initialization failed:', error);
+      process.exit(1);
+    });
+}
